@@ -7,7 +7,7 @@ var socketio = require('socket.io')
 var config = require('./config')
 
 var host = 'localhost'
-var port = 3000
+var port = process.env.PORT || 3000
 
 var server = restify.createServer({
   name: 'Yelpick',
