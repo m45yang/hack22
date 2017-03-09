@@ -6,7 +6,6 @@ var plugins = require('restify-plugins')
 var socketio = require('socket.io')
 var config = require('./config')
 
-var host = 'localhost'
 var port = process.env.PORT || 3000
 
 var server = restify.createServer({
@@ -31,8 +30,8 @@ require('./mongoose')(server)
 // Install sockets
 require('./sockets/index')(server)
 
-server.listen(port, host, function listening() {
-  server.log.info(server.name + ' running: ' + host + ':' + port)
+server.listen(port, function listening() {
+  server.log.info(server.name + ' listening on port ' + port)
 })
 
 module.exports = server
