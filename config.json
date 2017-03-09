@@ -1,0 +1,6 @@
+{
+    "db": {
+        "production": "mongodb://yelpick:welcometotheparty@ds127190.mlab.com:27190/yelpick",
+        "development": "mongodb://localhost:27017/yelpick"
+    }
+}

@@ -1,9 +1,10 @@
 'use strict'
 
 var restify = require('restify')
+restify.errors = require('restify-errors')
 var plugins = require('restify-plugins')
 var socketio = require('socket.io')
-restify.errors = require('restify-errors')
+var config = require('./config')
 
 var host = 'localhost'
 var port = 3000
@@ -19,8 +20,13 @@ server.use(plugins.jsonBodyParser({
   mapParams: true
 }))
 
+server.config = config
+
 // Enable basic logging
 require('./logger')(server)
+
+// Connect to mongodb
+require('./mongoose')(server)
 
 // Install sockets
 require('./sockets/index')(server)
