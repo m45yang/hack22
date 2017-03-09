@@ -22,7 +22,6 @@ server.use(plugins.jsonBodyParser({
 // Enable basic logging
 require('./logger')(server)
 
-
 // Install sockets
 require('./sockets/index')(server)
 

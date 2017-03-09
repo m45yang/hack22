@@ -4,8 +4,7 @@
   "description": "Yelp Hack 22 project",
   "main": "app.js",
   "scripts": {
-    "start": "node . | ./node_modules/bunyan/bin/bunyan",
-    "test": "test"
+    "start": "node . | ./node_modules/bunyan/bin/bunyan"
   },
   "repository": {
     "type": "git",
