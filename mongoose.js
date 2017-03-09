@@ -5,7 +5,7 @@
  */
 
 var mongoose = require('mongoose')
-var Promsie = require('bluebird')
+var Promise = require('bluebird')
 
 var initMongoose = function(server) {
 

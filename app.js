@@ -14,7 +14,6 @@ var server = restify.createServer({
   socketio: true
 })
 
-
 // Default http helpers/handlers
 server.use(plugins.queryParser())
 server.use(plugins.jsonBodyParser({
