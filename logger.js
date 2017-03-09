@@ -5,37 +5,34 @@
  */
 
 var bunyan = require('bunyan')
-var bunyanMiddleware = require('express-bunyan-logger')
+var plugins = require('restify-plugins')
+var restify = require('restify')
 
-var initLogger = function(app) {
+var initLogger = function(server) {
 
   var logger = bunyan.createLogger({
     name: 'yelpick',
     stream: process.stdout
   })
 
-  // Expose logger
-  app.log = logger
-
-  // Expose the logger to each request
-  app.use(function(req, res, next) {
-    req.log = app.log
-    next()
+  // Handle and log uncaught exceptions
+  server.on('uncaughtException', function (req, res, route, err) {
+    logger.fatal(err)
   })
 
-  // Global error logger
-  app.use(function(err, req, res, next) {
-    app.log.error(err)
+  // Handle and log internal errors
+  server.on('InternalServer', function (req, res, err, next) {
+    logger.fatal(err)
+    return next()
   })
 
   // Per request logger
-  app.use(bunyanMiddleware({
-    name: 'yelpick',
-    streams: [{
-      level: 'info',
-      stream: process.stdout
-    }]
+  server.on('after', plugins.auditLogger({
+    log: logger
   }))
+
+  // Expose logger
+  server.log = logger
 
 }
 
