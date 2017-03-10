@@ -21,3 +21,5 @@ socket.on('info', function(msg) {
 socket.on('game start', function() {
   console.log('game start!')
 })
+
+socket.emit('score', {room_id: room_id, user_id: user_id, score: 100})

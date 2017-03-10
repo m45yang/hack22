@@ -17,27 +17,26 @@ var initSockets = function(server) {
         socket.emit('new_connection', { hello: 'Welcome to YelPick!' });
 
         socket.on('create', function (msg) {
-          var new_game = new Game({shortId: shortid.generate(), state: 'waiting'});
-          new_game.save()
-          .then(function (new_game) {
-              new_game.players.push({user_id: msg.user_id, business_id: msg.business_id, room_id: new_game.shortId, state: 'alive', score: 0});
-              socket.join(new_game.shortId, function() {
-                console.log('host %s created room %s', msg.user_id, new_game.shortId);
-                socket.emit('create_result', {user_id: msg.user_id, room_id: new_game.shortId});
-              })
-            }
-          )
+          var new_game = new Game({shortId: shortid.generate(), state: 'waiting', players: [], sockets: []});
+          new_game.players.push({user_id: msg.user_id, business_id: msg.business_id, room_id: new_game.shortId, state: 'alive', score: 0, socket_id: socket.id});
+          new_game.sockets.push(socket.id);
+          new_game.save();
+          socket.join(new_game.shortId, function() {
+            console.log('host %s created room %s', msg.user_id, new_game.shortId);
+            socket.emit('create_result', {user_id: msg.user_id, room_id: new_game.shortId});
+          })
         })
 
         socket.on('join', function (msg) {
-          console.log(msg);
           socket.join(msg.room_id, function() {
             Game.findOne({shortId: msg.room_id}).exec()
             .then(function (game_room) {
-              game_room.players.push({user_id: msg.user_id, business_id: msg.business_id, room_id: game_room.shortId, state: 'alive', score: 0});
-              console.log('user %s joined room with biz_id %s',msg.user_id, msg.business_id);
+              game_room.players.push({user_id: msg.user_id, business_id: msg.business_id, room_id: game_room.shortId, state: 'alive', score: 0, socket_id: socket.id});
+              game_room.sockets.push(socket.id);
+              console.log('user %s joined room with biz_id %s', msg.user_id, msg.business_id);
               socket.emit('join_result', {players: game_room.players.length});
-              io.sockets.in(msg.room_id).emit('info','%s has joined the game!', msg.user_id);
+              io.sockets.in(msg.room_id).emit('info', msg.user_id +' has joined the game!');
+              console.log(game_room.sockets);
               game_room.save();
             })
           })
@@ -88,7 +87,7 @@ var initSockets = function(server) {
 
         function mark_user_dead(game_room, user_id) {
           for (var i=0; i<game_room.players.length; i++) {
-            if (game_room.players[i].id == msg.user_id) {
+            if (game_room.players[i].id == user_id) {
               game_room[i].state = 'dead';
             }
           }
@@ -99,21 +98,38 @@ var initSockets = function(server) {
           Game.findOne({shortId: msg.room_id}).exec()
           .then(function(game_room) {
             mark_user_dead(game_room, msg.user_id);
+            socket.emit('died_result', 'you have died');
             if (has_game_end(game_room)) {
               broadcast_result(socket, game_room)
             }
           })
         })
 
-        socket.on('disconnect', function(msg) {
-          Game.findOne({shortId: msg.room_id}).exec()
+        // so when a client is killed, we only have socket id
+        // thus we need socket id to find the game_room
+        socket.on('disconnect', function() {
+          console.log('socket %s tries to disconnect', socket.id);
+          Game.findOne({sockets: socket.id}).exec()
           .then(function(game_room) {
             // TODO: we should declare players as dict for faster search
-            mark_user_dead(game_room, msg.user_id);
+            console.log(game_room.sockets);
+            disconnected_user_id = '';
+            for (var i=0; i<game_room.players.length; i++) {
+              if (game_room.players[i].socket_id == socket.id) {
+                disconnected_user_id = game_room.players[i].user_id;
+                break;
+              }
+            }
+            game_room.update({$pull: {players: disconnected_user_id}});
+            game_room.update({$pull: {sockets: socket.id}});
+            game_room.save()
+
+            mark_user_dead(game_room, disconnected_user_id);
             if (has_game_end(game_room)) {
               broadcast_result(game_room)
             }
-            console.log('user %s disconnected', msg.user_id );
+            console.log('user %s disconnected, socket is %s', disconnected_user_id, socket.id);
+            console.log('connected sockets %s', game_room.sockets);
           })
         })
     })
