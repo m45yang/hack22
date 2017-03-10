@@ -2,10 +2,9 @@ var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
 var Player = new Schema({
-  user_id: String,
-  business_id: String,
-  room_id: String,
-  socket_id: String,
+  userId: String,
+  businessId: String,
+  socketId: String,
   state: {
     type: String,
     enum: ['alive', 'dead']
@@ -14,13 +13,12 @@ var Player = new Schema({
 });
 
 var Game = new Schema({
-  shortId: String,
+  roomId: String,
   state: {
     type: String,
     enum: ['waiting', 'playing', 'end']
   },
   players: [Player],
-  sockets: [String],
 }, { collection: 'games' });
 
 module.exports = mongoose.model('Game', Game);
