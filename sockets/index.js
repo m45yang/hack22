@@ -4,7 +4,7 @@ var Game = require('../models/game.js')
 
 var UpdateGameStateEvent = 'updateGameState'
 var GameEndEvent = 'gameEnd'
-var ErrorEvent = 'error'
+var ErrorEvent = 'errorState'
 
 var initSockets = function(server) {
 
@@ -34,38 +34,45 @@ var initSockets = function(server) {
           console.log('host %s created room %s', msg.userId, createdGame.roomId)
           socket.join(createdGame.roomId, function() {
             console.log('host %s joined room %s', msg.userId, createdGame.roomId)
+            console.log(createdGame)
             io.sockets.in(createdGame.roomId).emit(UpdateGameStateEvent, createdGame)
           })
         })
         .catch(function(error) {
-          console.log('ERROR %s', error)
+          console.log(error)
+          socket.emit(ErrorEvent, { error: error })
         })
       })
 
 
       socket.on('join', function(msg) {
         console.log('join')
-        socket.join(msg.roomId, function() {
-          console.log('user %s joined room %s with businessId %s', msg.userId, msg.roomId, msg.businessId)
-          Game.findOne({roomId: msg.roomId}).exec()
-          .then(function(gameRoom) {
-            gameRoom.players.push({
-              userId: msg.userId,
-              businessId: msg.businessId,
-              state: 'alive',
-              score: 0,
-              socketId: socket.id
-            })
+        Game.findOne({roomId: msg.roomId}).exec()
+        .then(function(gameRoom) {
+          if (!gameRoom) {
+            throw Error('Room not found')
+          }
 
-            return gameRoom.save()
+          gameRoom.players.push({
+            userId: msg.userId,
+            businessId: msg.businessId,
+            state: 'alive',
+            score: 0,
+            socketId: socket.id
           })
-          .then(function(updatedGame) {
-            console.log('user %s added to game %s', msg.userId, updatedGame.roomId)
+
+          return gameRoom.save()
+        })
+        .then(function(updatedGame) {
+          console.log('user %s added to game %s', msg.userId, updatedGame.roomId)
+          socket.join(updatedGame.roomId, function() {
+            console.log('host %s joined socket room %s', msg.userId, updatedGame.roomId)
             io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
           })
-          .catch(function(error) {
-            console.log('ERROR %s', error)
-          })
+        })
+        .catch(function(error) {
+          console.log(error)
+          socket.emit(ErrorEvent, { error: error })
         })
       })
 
@@ -81,7 +88,8 @@ var initSockets = function(server) {
           io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
         })
         .catch(function(error) {
-          console.log('ERROR %s', error)
+          console.log(error)
+          socket.emit(ErrorEvent, { error: error })
         })
       })
 
@@ -104,7 +112,8 @@ var initSockets = function(server) {
           io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
         })
         .catch(function(error) {
-          console.log('ERROR %s', error)
+          console.log(error)
+          socket.emit(ErrorEvent, { error: error })
         })
       })
 
@@ -136,7 +145,8 @@ var initSockets = function(server) {
           }
         })
         .catch(function(error) {
-          console.log('ERROR %s', error)
+          console.log(error)
+          socket.emit(ErrorEvent, { error: error })
         })
       })
 
@@ -169,6 +179,10 @@ var initSockets = function(server) {
           else {
             io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
           }
+        })
+        .catch(function(error) {
+          console.log(error)
+          socket.emit(ErrorEvent, { error: error })
         })
       })
 
