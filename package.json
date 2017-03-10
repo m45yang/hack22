@@ -23,6 +23,7 @@
     "restify": "^4.1.1",
     "restify-plugins": "^1.1.0",
     "socket.io": "1.7.3",
-    "socket.io-client": "1.7.3"
+    "socket.io-client": "1.7.3",
+    "shortid": "2.2.8"
   }
 }
