@@ -2,12 +2,17 @@ var socketio = require('socket.io')
 var shortid = require('shortid')
 var Game = require('../models/game.js')
 
+var UpdateGameStateEvent = 'updateGameState'
+var GameEndEvent = 'gameEnd'
+var ErrorEvent = 'error'
+
 var initSockets = function(server) {
 
     var io = socketio.listen(server.server)
 
     io.sockets.on('connection', function (socket) {
       console.log('%s connected!', socket.id)
+
 
       socket.on('create', function (msg) {
         console.log('create')
@@ -29,7 +34,7 @@ var initSockets = function(server) {
           console.log('host %s created room %s', msg.userId, createdGame.roomId)
           socket.join(createdGame.roomId, function() {
             console.log('host %s joined room %s', msg.userId, createdGame.roomId)
-            io.sockets.in(createdGame.roomId).emit('updateGameState', createdGame)
+            io.sockets.in(createdGame.roomId).emit(UpdateGameStateEvent, createdGame)
           })
         })
         .catch(function(error) {
@@ -56,7 +61,7 @@ var initSockets = function(server) {
           })
           .then(function(updatedGame) {
             console.log('user %s added to game %s', msg.userId, updatedGame.roomId)
-            io.sockets.in(updatedGame.roomId).emit('updateGameState', updatedGame)
+            io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
           })
           .catch(function(error) {
             console.log('ERROR %s', error)
@@ -73,7 +78,7 @@ var initSockets = function(server) {
           gameRoom.state = 'playing'
           return gameRoom.save()
         }).then(function(updatedGame) {
-          io.sockets.in(updatedGame.roomId).emit('updateGameState', updatedGame)
+          io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
         })
         .catch(function(error) {
           console.log('ERROR %s', error)
@@ -96,7 +101,7 @@ var initSockets = function(server) {
           return gameRoom.save()
         })
         .then(function(updatedGame) {
-          io.sockets.in(updatedGame.roomId).emit('updateGameState', updatedGame)
+          io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
         })
         .catch(function(error) {
           console.log('ERROR %s', error)
@@ -114,15 +119,20 @@ var initSockets = function(server) {
               gameRoom.players[i].state = 'dead'
             }
           }
+
+          if (hasGameEnd(gameRoom)) {
+            gameRoom.state = 'end'
+          }
+
           return gameRoom.save()
         })
         .then(function(updatedGame) {
-          if (hasGameEnd(updatedGame)) {
+          if (updatedGame.state === 'end') {
             console.log('game over')
-            io.sockets.in(updatedGame.roomId).emit('gameEnd', updatedGame)
+            io.sockets.in(updatedGame.roomId).emit(GameEndEvent, updatedGame)
           }
           else {
-            io.sockets.in(updatedGame.roomId).emit('updateGameState', updatedGame)
+            io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
           }
         })
         .catch(function(error) {
@@ -134,7 +144,6 @@ var initSockets = function(server) {
       socket.on('disconnecting', function() {
         console.log('disconnecting')
         var roomId = getGameRoom(socket.rooms, socket.id)
-        console.log(roomId)
         Game.findOne({roomId: roomId}).exec()
         .then(function(gameRoom) {
           // TODO: we should declare players as dict for faster search
@@ -146,15 +155,19 @@ var initSockets = function(server) {
             }
           }
 
+          if (hasGameEnd(gameRoom)) {
+            gameRoom.state = 'end'
+          }
+
           return gameRoom.save()
         })
         .then(function(updatedGame) {
-          if (hasGameEnd(updatedGame)) {
+          if (updatedGame.state === 'end') {
             console.log('game over')
-            io.sockets.in(updatedGame.roomId).emit('gameEnd', updatedGame)
+            io.sockets.in(updatedGame.roomId).emit(GameEndEvent, updatedGame)
           }
           else {
-            io.sockets.in(updatedGame.roomId).emit('updateGameState', updatedGame)
+            io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
           }
         })
       })
