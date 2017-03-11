@@ -138,7 +138,22 @@ var initSockets = function(server) {
         .then(function(updatedGame) {
           if (updatedGame.state === 'end') {
             console.log('game over')
-            io.sockets.in(updatedGame.roomId).emit(GameEndEvent, updatedGame)
+            var winnerId = ''
+            var winnerBizId = ''
+            var maxScore = -1
+            for (var i=0; i<updatedGame.players.length; i++) {
+              if (maxScore < updatedGame.players[i].score) {
+                maxScore = updatedGame.players[i].score
+                winnerId = updatedGame.players[i].userId
+                winnerBizId = updatedGame.players[i].businessId
+              }
+            }
+            console.log('winner: %s, winner biz: %s', winnerId, winnerBizId)
+
+            io.sockets.in(updatedGame.roomId).emit(GameEndEvent, {
+              userId: winnerId,
+              businessId: winnerBizId
+            })
           }
           else {
             io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
@@ -174,7 +189,22 @@ var initSockets = function(server) {
         .then(function(updatedGame) {
           if (updatedGame.state === 'end') {
             console.log('game over')
-            io.sockets.in(updatedGame.roomId).emit(GameEndEvent, updatedGame)
+            var winnerId = ''
+            var winnerBizId = ''
+            var maxScore = -1
+            for (var i=0; i<updatedGame.players.length; i++) {
+              if (maxScore < updatedGame.players[i].score) {
+                maxScore = updatedGame.players[i].score
+                winnerId = updatedGame.players[i].userId
+                winnerBizId = updatedGame.players[i].businessId
+              }
+            }
+            console.log('winner: %s, winner biz: %s', winnerId, winnerBizId)
+
+            io.sockets.in(updatedGame.roomId).emit(GameEndEvent, {
+              userId: winnerId,
+              businessId: winnerBizId
+            })
           }
           else {
             io.sockets.in(updatedGame.roomId).emit(UpdateGameStateEvent, updatedGame)
