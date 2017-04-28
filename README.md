@@ -1,5 +1,5 @@
-# hack22 YelPick!
-A simple websocket service built with Restify and SocketIO, used to connect different Yelp mobile app users together in real time to play a game of YelPick.
+# YelPick
+A simple websocket service built with Restify and SocketIO to connect different Yelp mobile app users to play a game of YelPick together in real time. Built at Yelp's quarterly hackathon.
 
 ## Running the app
     npm install
